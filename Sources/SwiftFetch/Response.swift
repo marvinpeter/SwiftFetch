@@ -29,11 +29,11 @@ public struct Response {
     public let response: HTTPURLResponse?
     
     /// Return all cookies associated with the requested domain
-    public lazy var cookies: [String: String] = ({
+    public var cookies: [String: String] {
         Dictionary(uniqueKeysWithValues: HTTPCookieStorage.shared.cookies!
                 .filter { $0.domain == url.host! }
                 .map { ($0.name, $0.value) })
-    })()
+    }
 
     private let body: Data?
 
