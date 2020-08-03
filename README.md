@@ -203,6 +203,9 @@ struct Response {
 
     /// Indicates whether the response was successful (status in the range 200–299) or not.
     let ok: Bool
+    
+    /// Return all cookies associated with the requested domain
+    let cookies: [String: String]
 
     /// Get the response body
     /// - Returns: Data
