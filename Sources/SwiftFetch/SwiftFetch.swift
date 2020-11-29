@@ -21,18 +21,33 @@ public func fetch(_ url: URL, headers: [HTTPHeader] = [], method: HTTPMethod = .
     }
 
     let h = Dictionary(uniqueKeysWithValues: headers.map { $0.createHeader() })
-    let req = URLRequest(url: url, headers: h, method: method.rawValue, body: body)
+    var req = URLRequest(url: url, headers: h, method: method.rawValue, body: body)
+    req.timeoutInterval = 60
 
-    URLSession.shared.dataTask(with: req) { (data, res, error) in
-        if let err = error {
-            return handler(Response(url: url, error: err))
-        } else {
-            return handler(Response(
-                url: url,
-                data: data,
-                response: res as! HTTPURLResponse))
+    DispatchQueue.global(qos: .userInitiated).async {
+        let s = DispatchSemaphore(value: 0)
+        var response: Response? = nil
+
+        for _ in 0..<3 {
+            URLSession.shared.dataTask(with: req) { (data, res, error) in
+                if let err = error {
+                    response = Response(url: url, error: err)
+                } else {
+                    response = Response(
+                        url: url,
+                        data: data,
+                        response: res as! HTTPURLResponse)
+                }
+                s.signal()
+            }.resume()
+            s.wait()
+            if response!.ok {
+                return handler(response!)
+            }
         }
-    }.resume()
+        
+        return handler(response!)
+    }
 }
 
 /// Fetch web resource asynchronous
